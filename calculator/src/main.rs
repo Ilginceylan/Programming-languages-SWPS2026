@@ -63,6 +63,53 @@ fn evaluate_simple(a: f64, op: char, b: f64) -> Option<f64> {
     Op::from_char(op)?.apply(a, b)
 }
 
+
+#[derive(Debug)]
+struct Stack {
+    items: Vec<f64>,
+}
+
+impl Stack {
+    fn new() -> Self {
+        Stack { items: Vec::new() }
+    }
+
+    fn push(&mut self, v: f64) {
+        self.items.push(v);
+    }
+
+    fn pop(&mut self) -> Option<f64> {
+        self.items.pop()
+    }
+
+    /// Look at the top number without removing it.
+    fn peek(&self) -> Option<&f64> {
+        self.items.last()
+    }
+
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    /// Take the two top numbers (b is the top, a is below it), calculate
+    /// `a op b` and push the result. We check and calculate first and change
+    /// the stack only afterwards, so if there are fewer than two numbers or
+    /// the operation fails, the stack stays unchanged and we return None.
+    fn apply(&mut self, op: Op) -> Option<()> {
+        let n = self.items.len();
+        if n < 2 {
+            return None;
+        }
+        let a = self.items[n - 2];
+        let b = self.items[n - 1];
+        let result = op.apply(a, b)?;
+        self.items.pop();
+        self.items.pop();
+        self.items.push(result);
+        Some(())
+    }
+}
+
 fn main() {
     println!("2 + 3 = {:?}", evaluate_simple(2.0, '+', 3.0));
 }
