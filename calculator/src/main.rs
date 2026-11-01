@@ -111,5 +111,81 @@ impl Stack {
 }
 
 fn main() {
-    println!("2 + 3 = {:?}", evaluate_simple(2.0, '+', 3.0));
+    // (2 + 3) * 4 - 1 = 19, using only push and apply.
+    let mut stack = Stack::new();
+    stack.push(2.0);
+    stack.push(3.0);
+    stack.apply(Op::Add);
+    stack.push(4.0);
+    stack.apply(Op::Mul);
+    stack.push(1.0);
+    stack.apply(Op::Sub);
+    println!("{:?}", stack);
+    while let Some(v) = stack.pop() {
+        println!("{}", v);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn op_basics() {
+        assert_eq!(Op::from_char('*'), Some(Op::Mul));
+        assert_eq!(Op::from_char('x'), None);
+        assert_eq!(Op::Div.symbol(), '/');
+        assert_eq!(Op::Add.precedence(), 1);
+        assert_eq!(Op::Mul.precedence(), 2);
+    }
+
+    #[test]
+    fn op_apply() {
+        assert_eq!(Op::Sub.apply(5.0, 3.0), Some(2.0));
+        assert_eq!(Op::Div.apply(1.0, 0.0), None);
+    }
+
+    #[test]
+    fn evaluate_simple_works() {
+        assert_eq!(evaluate_simple(2.0, '+', 4.0), Some(6.0));
+        assert_eq!(evaluate_simple(6.0, '/', 4.0), Some(1.5));
+        assert_eq!(evaluate_simple(1.0, '/', 0.0), None);
+        assert_eq!(evaluate_simple(1.0, '?', 2.0), None);
+    }
+
+    #[test]
+    fn stack_push_pop_peek() {
+        let mut s = Stack::new();
+        assert_eq!(s.peek(), None);
+        assert_eq!(s.len(), 0);
+        s.push(1.0);
+        s.push(2.0);
+        assert_eq!(s.peek(), Some(&2.0));
+        assert_eq!(s.len(), 2);
+        assert_eq!(s.pop(), Some(2.0));
+        assert_eq!(s.pop(), Some(1.0));
+        assert_eq!(s.pop(), None);
+    }
+
+    #[test]
+    fn stack_apply() {
+        let mut s = Stack::new();
+        s.push(10.0);
+        s.push(4.0);
+        assert_eq!(s.apply(Op::Sub), Some(()));
+        assert_eq!(s.items, vec![6.0]);
+
+        // Fewer than two values: unchanged.
+        let mut s = Stack::new();
+        s.push(5.0);
+        assert_eq!(s.apply(Op::Add), None);
+        assert_eq!(s.items, vec![5.0]);
+
+        // Division by zero: unchanged.
+        let mut s = Stack::new();
+        s.push(1.0);
+        s.push(0.0);
+        assert_eq!(s.apply(Op::Div), None);
+        assert_eq!(s.items, vec![1.0, 0.0]);
+    }
 }
